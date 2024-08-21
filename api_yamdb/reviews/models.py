@@ -1,5 +1,7 @@
 from django.db import models
 
+from users.models import YaUser
+
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
@@ -29,3 +31,27 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Review(models.Model):
+    title = models.ForeignKey(Title, on_delete=models.CASCADE, related_name="reviews")
+    text = models.TextField()
+    author = models.ForeignKey(YaUser, on_delete=models.CASCADE, related_name="reviews")
+    score = models.IntegerField()
+    pub_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('title', 'author')
+
+    def __str__(self):
+        return self.text[:50]
+
+
+class Comment(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="comments")
+    text = models.TextField()
+    author = models.ForeignKey(YaUser, on_delete=models.CASCADE, related_name="comments")
+    pub_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text[:50]
