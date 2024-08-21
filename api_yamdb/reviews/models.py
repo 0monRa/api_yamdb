@@ -1,6 +1,10 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import YaUser
+
+MIN_RATE = 0
+MAX_RATE = 100
 
 
 class Category(models.Model):
@@ -37,7 +41,18 @@ class Review(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE, related_name="reviews")
     text = models.TextField()
     author = models.ForeignKey(YaUser, on_delete=models.CASCADE, related_name="reviews")
-    score = models.IntegerField()
+    score = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(
+                MIN_RATE,
+                message=f"Минимальная возможная оценка: {MIN_RATE}.",
+            ),
+            MaxValueValidator(
+                MAX_RATE,
+                message=f"Максимальная возможная оценка: {MAX_RATE}.",
+            ),
+        ],
+    )
     pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
