@@ -12,6 +12,7 @@ iniconfig==2.0.0
 packaging==24.1
 pluggy==0.13.1
 py==1.11.0
+djangorestframework-simplejwt==4.7.2
 PyJWT==2.1.0
 pytest==6.2.4
 pytest-django==4.4.0
