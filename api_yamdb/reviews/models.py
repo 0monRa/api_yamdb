@@ -43,6 +43,11 @@ class Title(models.Model):
     rating = models.IntegerField(default=0)
     description = models.TextField(blank=True)
 
+    class Meta:
+        verbose_name = 'произведение'
+        verbose_name_plural = 'Произведения'
+        ordering = ('name',)
+
     def __str__(self):
         return self.name
 
