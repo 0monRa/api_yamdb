@@ -39,6 +39,11 @@ class YaUser(AbstractUser):
         if self.is_superuser and self.role != ROLE_ADMIN:
             raise ValidationError('Суперпользователь — всегда администратор!')
 
+    def save(self, *args, **kwargs):
+        if self.is_superuser:
+            self.role = ROLE_ADMIN
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = 'пользователь'
         verbose_name_plural = 'Пользователи'
