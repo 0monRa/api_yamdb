@@ -1,9 +1,9 @@
 from django_filters.rest_framework import (
     CharFilter,
     DjangoFilterBackend,
-    FilterSet
+    FilterSet,
 )
-from rest_framework import viewsets, filters, status
+from rest_framework import mixins, viewsets, filters, status
 from rest_framework.response import Response
 
 from .serializers import (
@@ -13,15 +13,9 @@ from .serializers import (
     TitleDeleteSerializer,
     GenreSerializer,
     ReviewSerializer,
-    CommentSerializer
+    CommentSerializer,
 )
-from reviews.models import (
-    Category,
-    Genre,
-    Title,
-    Review,
-    Comment
-)
+from reviews.models import Category, Genre, Title, Review, Comment
 from users.permissions import (
     AdministratorPermission,
     AnonymousPermission,
@@ -68,20 +62,34 @@ class TitleViewSet(PermissionsMixin, viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
 
-class CategoryViewSet(PermissionsMixin, viewsets.ModelViewSet):
+class CategoryViewSet(
+    PermissionsMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     permission_classes = (AdministratorPermission,)
+    lookup_field = 'slug'
 
 
-class GenreViewSet(PermissionsMixin, viewsets.ModelViewSet):
+class GenreViewSet(
+    PermissionsMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     permission_classes = (AdministratorPermission,)
+    lookup_field = 'slug'
 
 
 class ReviewViewSet(PermissionsMixin, viewsets.ModelViewSet):
