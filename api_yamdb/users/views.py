@@ -10,7 +10,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import views, viewsets
 
-from .permissions import AdminPermission, UserPermission
+from .permissions import (
+    AdministratorPermission,
+    AuthenticatedPermission,
+)
 from .serializers import (
     AdminSerializer,
     SignupSerializer,
@@ -62,7 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = UserModel.objects.all()
     lookup_field = 'username'
     serializer_class = AdminSerializer
-    permission_classes = (AdminPermission,)
+    permission_classes = (AdministratorPermission,)
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
@@ -93,7 +96,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class MeViewSet(views.APIView):
-    permission_classes = (UserPermission,)
+    permission_classes = (AuthenticatedPermission,)
 
     def get(self, request):
         user = get_object_or_404(
