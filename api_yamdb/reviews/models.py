@@ -48,6 +48,14 @@ class Title(models.Model):
         verbose_name_plural = 'Произведения'
         ordering = ('name',)
 
+    def update_rating(self):
+        rating_avg = self.reviews.aggregate(models.Avg('score'))['score__avg']
+        if rating_avg is not None:
+            self.rating = int(rating_avg)
+        else:
+            self.rating = None
+        self.save()
+
     def __str__(self):
         return self.name
 
@@ -72,22 +80,21 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name="reviews"
     )
-    score = models.PositiveSmallIntegerField(
+    score = models.PositiveIntegerField(
         validators=[
-            MinValueValidator(
-                REVIEW_MIN_RATE,
-                message=f"Минимальная возможная оценка: {REVIEW_MIN_RATE}.",
-            ),
-            MaxValueValidator(
-                REVIEW_MAX_RATE,
-                message=f"Максимальная возможная оценка: {REVIEW_MAX_RATE}.",
-            ),
+            MinValueValidator(REVIEW_MIN_RATE),
+            MaxValueValidator(REVIEW_MAX_RATE),
         ],
     )
     pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('title', 'author')
+        constraints = (
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='unique_author_title'
+            ),
+        )
 
     def __str__(self):
         return self.text[:50]

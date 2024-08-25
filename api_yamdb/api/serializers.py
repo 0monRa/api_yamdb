@@ -80,7 +80,14 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'title', 'text', 'author', 'score', 'pub_date']
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
+
+    def validate_score(self, value):
+        if not 1 <= value <= 10:
+            raise serializers.ValidationError(
+                'Оценка должна быть в диапазоне от 1 до 10.'
+            )
+        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -88,4 +95,4 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'review', 'text', 'author', 'pub_date']
+        fields = ('id', 'text', 'author', 'pub_date')

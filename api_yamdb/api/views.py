@@ -1,9 +1,10 @@
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (
     CharFilter,
     DjangoFilterBackend,
     FilterSet,
 )
-from rest_framework import mixins, viewsets, filters, status
+from rest_framework import filters, mixins, status, serializers, viewsets
 from rest_framework.response import Response
 
 from .serializers import (
@@ -19,8 +20,7 @@ from reviews.models import Category, Genre, Title, Review, Comment
 from users.permissions import (
     AdministratorPermission,
     AnonymousPermission,
-    AuthorPermission,
-    ModeratorPermission,
+    CustomReviewCommentPermission
 )
 
 
@@ -95,16 +95,54 @@ class GenreViewSet(
 class ReviewViewSet(PermissionsMixin, viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = (AuthorPermission, ModeratorPermission)
+    permission_classes = (CustomReviewCommentPermission,)
+
+    def get_title(self):
+        title_id = self.kwargs.get('title_id')
+        return get_object_or_404(Title, pk=title_id)
+
+    def get_queryset(self):
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        title = self.get_title()
+        if Review.objects.filter(
+            author=self.request.user,
+            title=title
+        ).exists():
+            raise serializers.ValidationError(
+                "Вы уже оставили отзыв на этот заголовок."
+            )
+        serializer.save(
+            author=self.request.user,
+            title=title
+        )
+        title.update_rating()
+
+    def perform_destroy(self, instance):
+        title = instance.title
+        super().perform_destroy(instance)
+        title.update_rating()
+
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().update(request, *args, **kwargs)
 
 
 class CommentViewSet(PermissionsMixin, viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = (AuthorPermission, ModeratorPermission)
+    permission_classes = (CustomReviewCommentPermission,)
+
+    def get_review(self):
+        review_id = self.kwargs.get('review_id')
+        return get_object_or_404(Review, pk=review_id)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user, review=self.get_review())
+
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().update(request, *args, **kwargs)
