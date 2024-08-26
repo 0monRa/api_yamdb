@@ -7,6 +7,7 @@ from django_filters.rest_framework import (
 from rest_framework import filters, mixins, status, serializers, viewsets
 from rest_framework.response import Response
 
+from .mixins import PermissionsMixin
 from .serializers import (
     CategorySerializer,
     TitleSerializer,
@@ -19,17 +20,8 @@ from .serializers import (
 from reviews.models import Category, Genre, Title, Review, Comment
 from users.permissions import (
     AdministratorPermission,
-    AnonymousPermission,
     CustomReviewCommentPermission
 )
-
-
-class PermissionsMixin:
-
-    def get_permissions(self):
-        if self.action in {'list', 'retrieve'}:
-            return (AnonymousPermission(),)
-        return super().get_permissions()
 
 
 class TitleFilter(FilterSet):

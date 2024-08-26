@@ -1,21 +1,18 @@
-import uuid
-
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from api_yamdb.constants import (
-    ROLE_FIELD_LENGTH,
-    ROLE_ADMIN,
-    ROLE_MODERATOR,
-    ROLE_USER,
-)
+from api_yamdb.constants import ROLE_FIELD_LENGTH
 
 
 class YaUser(AbstractUser):
     bio = models.TextField(
         verbose_name='Биография'
     )
+
+    ROLE_ADMIN = 'admin'
+    ROLE_MODERATOR = 'moderator'
+    ROLE_USER = 'user'
 
     ROLE_CHOICES = (
         (ROLE_ADMIN, 'Admin'),
@@ -30,18 +27,25 @@ class YaUser(AbstractUser):
         default=ROLE_USER
     )
 
-    confirmation_code = models.UUIDField(
-        verbose_name='Код подтверждения',
-        default=uuid.uuid4,
-    )
+    @property
+    def is_user(self):
+        return self.role == self.ROLE_USER
+
+    @property
+    def is_moderator(self):
+        return self.role == self.ROLE_MODERATOR
+
+    @property
+    def is_admin(self):
+        return self.role == self.ROLE_ADMIN
 
     def clean(self):
-        if self.is_superuser and self.role != ROLE_ADMIN:
+        if self.is_superuser and self.is_admin:
             raise ValidationError('Суперпользователь — всегда администратор!')
 
     def save(self, *args, **kwargs):
         if self.is_superuser:
-            self.role = ROLE_ADMIN
+            self.role = self.ROLE_ADMIN
         super().save(*args, **kwargs)
 
     class Meta:

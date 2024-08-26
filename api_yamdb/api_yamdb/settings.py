@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 
@@ -92,6 +93,7 @@ AUTH_USER_MODEL = 'users.YaUser'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+EMAIL_HOST_USER = os.environ.get('DOMAIN_NAME')
 
 
 # Internationalization
