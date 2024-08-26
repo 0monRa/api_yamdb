@@ -106,12 +106,6 @@ class ReviewViewSet(PermissionsMixin, viewsets.ModelViewSet):
                 "Вы уже оставили отзыв на этот заголовок."
             )
         serializer.save(author=self.request.user, title=title)
-        title.update_rating()
-
-    def perform_destroy(self, instance):
-        title = instance.title
-        super().perform_destroy(instance)
-        title.update_rating()
 
     def update(self, request, *args, **kwargs):
         if request.method == 'PUT':
