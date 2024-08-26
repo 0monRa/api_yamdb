@@ -4,8 +4,10 @@ from django_filters.rest_framework import (
     DjangoFilterBackend,
     FilterSet,
 )
+from django.db.models import Avg
 from rest_framework import filters, mixins, status, serializers, viewsets
 from rest_framework.response import Response
+
 
 from .serializers import (
     CategorySerializer,
@@ -19,17 +21,9 @@ from .serializers import (
 from reviews.models import Category, Genre, Title, Review, Comment
 from users.permissions import (
     AdministratorPermission,
-    AnonymousPermission,
-    CustomReviewCommentPermission
+    CustomReviewCommentPermission,
 )
-
-
-class PermissionsMixin:
-
-    def get_permissions(self):
-        if self.action in {'list', 'retrieve'}:
-            return (AnonymousPermission(),)
-        return super().get_permissions()
+from .mixins import PermissionsMixin
 
 
 class TitleFilter(FilterSet):
@@ -42,7 +36,7 @@ class TitleFilter(FilterSet):
 
 
 class TitleViewSet(PermissionsMixin, viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
     serializer_class = TitleSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -51,10 +45,9 @@ class TitleViewSet(PermissionsMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return TitleSerializer
-        elif self.request.method == 'DELETE':
+        if self.request.method == 'DELETE':
             return TitleDeleteSerializer
-        else:
-            return TitlePostSerializer
+        return TitlePostSerializer
 
     def update(self, request, *args, **kwargs):
         if request.method == 'PUT':
@@ -107,16 +100,12 @@ class ReviewViewSet(PermissionsMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         title = self.get_title()
         if Review.objects.filter(
-            author=self.request.user,
-            title=title
+            author=self.request.user, title=title
         ).exists():
             raise serializers.ValidationError(
                 "Вы уже оставили отзыв на этот заголовок."
             )
-        serializer.save(
-            author=self.request.user,
-            title=title
-        )
+        serializer.save(author=self.request.user, title=title)
         title.update_rating()
 
     def perform_destroy(self, instance):
