@@ -1,7 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-from api_yamdb.constants import ROLE_ADMIN, ROLE_MODERATOR
-
 
 class AnonymousPermission(BasePermission):
 
@@ -36,7 +34,7 @@ class AdministratorPermission(BasePermission):
         if not request.user.is_authenticated:
             return False
         return (request.user.is_superuser
-                or request.user.role == ROLE_ADMIN)
+                or request.user.is_admin)
 
 
 class CustomReviewCommentPermission(BasePermission):
@@ -49,15 +47,12 @@ class CustomReviewCommentPermission(BasePermission):
         if request.method in SAFE_METHODS:
             return True
 
-        if request.user.is_superuser or request.user.role == ROLE_ADMIN:
+        if request.user.is_superuser or request.user.is_admin:
             return True
 
-        if request.user.role == ROLE_MODERATOR and request.method in [
+        if request.user.is_moderator and request.method in [
             'PATCH', 'DELETE'
         ]:
             return True
 
-        if obj.author == request.user:
-            return True
-
-        return False
+        return obj.author == request.user

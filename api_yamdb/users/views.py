@@ -1,6 +1,5 @@
-import uuid
-
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
@@ -9,6 +8,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import views, viewsets
+
+from api_yamdb.settings import EMAIL_HOST_USER
 
 from .permissions import (
     AdministratorPermission,
@@ -28,11 +29,12 @@ def auth_signup(request):
     serializer = SignupSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
+        token = default_token_generator.make_token(user)
 
         send_mail(
             subject='Confirmation Code',
-            message=str(user.confirmation_code),
-            from_email='from@example.com',
+            message=token,
+            from_email=EMAIL_HOST_USER,
             recipient_list=[user.email],
             fail_silently=False,
         )
@@ -49,16 +51,11 @@ def auth_token(request):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     user = get_object_or_404(UserModel, username=username)
 
-    try:
-        confirmation_code = uuid.UUID(confirmation_code)
-    except ValueError:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    if user.confirmation_code == confirmation_code:
+    if default_token_generator.check_token(user, token=confirmation_code):
         refresh = RefreshToken.for_user(user)
         data = {'token': str(refresh.access_token)}
         return Response(data, status=status.HTTP_200_OK)
-    return Response(status=status.HTTP_404_NOT_FOUND)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -113,13 +110,8 @@ class MeViewSet(views.APIView):
             username=request.user.username
         )
         serializer = UserSerializer(user, data=request.data)
-        if serializer.is_valid():
-
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(
                 serializer.data,
                 status=status.HTTP_200_OK)
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST)
