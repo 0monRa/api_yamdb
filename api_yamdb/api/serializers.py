@@ -76,17 +76,11 @@ class TitleDeleteSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True)
+    score = serializers.IntegerField(max_value=10, min_value=1)
 
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
-
-    def validate_score(self, value):
-        if not 1 <= value <= 10:
-            raise serializers.ValidationError(
-                'Оценка должна быть в диапазоне от 1 до 10.'
-            )
-        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):

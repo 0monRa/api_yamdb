@@ -97,11 +97,9 @@ class ReviewViewSet(PermissionsMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = self.get_title()
-        if Review.objects.filter(
-            author=self.request.user, title=title
-        ).exists():
+        if title.reviews.filter(author=self.request.user).exists():
             raise serializers.ValidationError(
-                "Вы уже оставили отзыв на этот заголовок."
+                'Вы уже оставили отзыв на этот заголовок.'
             )
         serializer.save(author=self.request.user, title=title)
 
@@ -117,8 +115,9 @@ class CommentViewSet(PermissionsMixin, viewsets.ModelViewSet):
     permission_classes = (CustomReviewCommentPermission,)
 
     def get_review(self):
+        title_id = self.kwargs.get('title_id')
         review_id = self.kwargs.get('review_id')
-        return get_object_or_404(Review, pk=review_id)
+        return get_object_or_404(Review, pk=review_id, title__id=title_id)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
